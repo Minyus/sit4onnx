@@ -224,7 +224,7 @@ def inference(
     provider_info = provider['provider_info']
     if onnx_execution_provider == 'tensorrt':
         provider_info[1]['trt_engine_cache_path'] = trt_engine_cache_path
-    if onnx_execution_provider == 'cuda':
+    if onnx_execution_provider in {'tensorrt', 'cuda'}:
         option_dict = eval(onnx_execution_options)
         assert isinstance(option_dict, dict), "Not Python dict: " + onnx_execution_options
         provider_info[1].update(option_dict)
