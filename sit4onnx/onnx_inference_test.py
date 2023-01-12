@@ -54,7 +54,7 @@ ONNX_EXECUTION_PROVIDERS: dict = {
         'sub_info': {},
     },
     'cuda': {
-        'provider_info': 'CUDAExecutionProvider',
+        'provider_info': ('CUDAExecutionProvider', {}),
         'sub_info': {},
     },
     'openvino_cpu': {
@@ -82,6 +82,7 @@ def inference(
     fixed_shapes: Optional[List[int]] = None,
     test_loop_count: Optional[int] = 10,
     onnx_execution_provider: Optional[str] = 'tensorrt',
+    onnx_execution_options: Optional[str] = '{}',
     intra_op_num_threads: Optional[int] = 0,
     input_numpy_file_paths_for_testing: Optional[List[str]] = None,
     numpy_ndarrays_for_testing: Optional[List[np.ndarray]] = None,
@@ -124,6 +125,10 @@ def inference(
         ONNX Execution Provider.\n\
         "tensorrt" or "cuda" or "openvino_cpu" or "openvino_gpu" or "cpu"\n\
         Default: "tensorrt"
+    
+    onnx_execution_options: Optional[str]
+        ONNX Execution Provider options in Python dict format.\n\
+        Default: "{}"
 
     intra_op_num_threads: Optional[int]
         Sets the number of threads used to parallelize the execution within nodes.\n\
@@ -219,6 +224,11 @@ def inference(
     provider_info = provider['provider_info']
     if onnx_execution_provider == 'tensorrt':
         provider_info[1]['trt_engine_cache_path'] = trt_engine_cache_path
+    if onnx_execution_provider == 'cuda':
+        option_dict = eval(onnx_execution_options)
+        assert isinstance(option_dict, dict), "Not Python dict: " + onnx_execution_options
+        provider_info[1].update(option_dict)
+        
     sub_info = provider['sub_info']
 
     # Session option
@@ -451,6 +461,13 @@ def main():
         help='ONNX Execution Provider.'
     )
     parser.add_argument(
+        '-oeo',
+        '--onnx_execution_options',
+        type=str,
+        default='{}',
+        help='ONNX Execution Provider options in Python dict format'
+    )
+    parser.add_argument(
         '-iont',
         '--intra_op_num_threads',
         type=int,
@@ -490,6 +507,7 @@ def main():
     fixed_shapes=args.fixed_shapes
     test_loop_count = args.test_loop_count
     onnx_execution_provider = args.onnx_execution_provider
+    onnx_execution_options = args.onnx_execution_options
     intra_op_num_threads = args.intra_op_num_threads
     input_numpy_file_paths_for_testing = args.input_numpy_file_paths_for_testing
     output_numpy_file = args.output_numpy_file
@@ -501,6 +519,7 @@ def main():
         fixed_shapes=fixed_shapes,
         test_loop_count=test_loop_count,
         onnx_execution_provider=onnx_execution_provider,
+        onnx_execution_options=onnx_execution_options,
         intra_op_num_threads=intra_op_num_threads,
         input_numpy_file_paths_for_testing=input_numpy_file_paths_for_testing,
         numpy_ndarrays_for_testing=None,
